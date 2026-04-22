@@ -5,9 +5,9 @@ from __future__ import annotations
 import asyncio
 import logging
 
-from app.bootstrap import ensure_admin_user
 from app.config import get_settings
 from app.db import SessionLocal, init_models
+from app.services.effective_config import load_effective
 from app.worker import drain
 from app.worker import restore_jobs
 
@@ -16,20 +16,23 @@ log = logging.getLogger("worker")
 
 
 async def loop() -> None:
-    s = get_settings()
     await init_models()
-    await ensure_admin_user()
     while True:
         worked = False
+        delay_idle = get_settings().worker_poll_idle_seconds
+        delay_active = get_settings().worker_poll_active_seconds
         try:
             async with SessionLocal() as session:
+                cfg = await load_effective(session)
+                delay_idle = cfg.worker_poll_idle_seconds
+                delay_active = cfg.worker_poll_active_seconds
                 if await restore_jobs.process_pending_restores(session):
                     worked = True
                 if await drain.process_next_drain(session):
                     worked = True
         except Exception:
             log.exception("worker cycle error")
-        delay = s.worker_poll_active_seconds if worked else s.worker_poll_idle_seconds
+        delay = delay_active if worked else delay_idle
         log.info("sleep %s s (worked=%s)", delay, worked)
         await asyncio.sleep(delay)
 

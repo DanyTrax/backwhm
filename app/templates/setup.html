@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Configuración inicial{% endblock %}
+{% block content %}
+<h1>Primer administrador</h1>
+<p class="muted">Solo se muestra mientras no exista ningún usuario. Después, cree más cuentas en <strong>Usuarios</strong> (solo admin).</p>
+{% if error %}
+<p style="color:var(--danger);">{{ error }}</p>
+{% endif %}
+<div class="card" style="max-width:480px;">
+  <form method="post" action="/setup">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p><label>Email del administrador<br><input type="email" name="email" required autocomplete="email" style="width:100%;"></label></p>
+    <p><label>Contraseña (mín. 10 caracteres)<br><input type="password" name="password" required minlength="10" autocomplete="new-password" style="width:100%;"></label></p>
+    <p><label>Repita contraseña<br><input type="password" name="password2" required minlength="10" autocomplete="new-password" style="width:100%;"></label></p>
+    <button type="submit">Crear administrador e ir al login</button>
+  </form>
+</div>
+{% endblock %}

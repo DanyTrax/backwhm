@@ -8,8 +8,8 @@ import httpx
 from app.config import get_settings
 
 
-async def send_alert(title: str, body: dict[str, Any]) -> None:
-    url = get_settings().alert_webhook_url
+async def send_alert(title: str, body: dict[str, Any], *, webhook_url: str | None = None) -> None:
+    url = (webhook_url or "").strip() or get_settings().alert_webhook_url
     if not url:
         return
     try:

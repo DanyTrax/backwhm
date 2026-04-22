@@ -14,7 +14,19 @@ Orquestación **WHM → VPS (Docker/Dockge) → Google Drive** con panel web (lo
 3. En la carpeta del stack cree **`secrets/`** y coloque la clave privada SSH como **`whm_rsa`** (permisos restrictivos en el host).
 4. Despliegue. Espere a que Postgres esté sano y la API arranque.
 5. Abra **`http://IP:PUERTO/install`**: asistente paso a paso — claves de sesión ya generadas en la BD, opción de generar secreto HMAC para el webhook, creación del **primer administrador**.
-6. En **`/install/complete`** siga el enlace al login; luego como admin abra **`/settings/integrations`** para conectar **WHM** y **Drive** (sustituyen valores por defecto del `.env` si los rellena en el panel).
+6. En **`/install/complete`** siga el enlace al login; luego como admin abra **`/settings/integrations`** para conectar **WHM** y **Drive** (sustituyen valores por defecto del `.env` si los rellena en el panel). La guía detallada está en **`/docs`** dentro del panel.
+
+### YAML en Dockge
+
+- En Dockge: **Create stack** → nombre (p. ej. `backwhm`) → pegue el contenido de [`docker-compose.yml`](https://raw.githubusercontent.com/DanyTrax/backwhm/main/docker-compose.yml) (o cloné el repo y use ruta local).
+- Cree un archivo **`.env`** en la misma carpeta del stack (Dockge suele tener editor de variables) con al menos:
+
+```env
+POSTGRES_PASSWORD=una_clave_larga_y_unica
+API_PORT=8000
+```
+
+- Carpetas en el host de ese stack: **`secrets/whm_rsa`** (clave privada SSH) y el volumen Docker **`rclone_config`** poblado (p. ej. ejecutando `rclone config` en un contenedor temporal y usando el mismo volumen).
 
 No es obligatorio rellenar `SESSION_SECRET` ni `CSRF_SECRET` en `.env`: la sesión firma con un secreto almacenado en la tabla `app_secrets`. Puede definir `SESSION_SECRET` en entorno solo como respaldo si la base de datos no está disponible en el arranque.
 

@@ -4,33 +4,30 @@ import asyncio
 from pathlib import Path
 from shlex import quote
 
-from app.config import get_settings
+from app.services.effective_config import EffectiveIntegrationConfig, ssh_configured
 
 
-def _ssh_base() -> list[str]:
-    s = get_settings()
-    key = s.whm_ssh_key_path
+def _ssh_base(cfg: EffectiveIntegrationConfig) -> list[str]:
     return [
         "ssh",
         "-i",
-        key,
+        cfg.whm_ssh_key_path,
         "-p",
-        str(s.whm_ssh_port),
+        str(cfg.whm_ssh_port),
         "-o",
         "BatchMode=yes",
         "-o",
         "StrictHostKeyChecking=accept-new",
-        f"{s.whm_ssh_user}@{s.whm_ssh_host}",
+        f"{cfg.whm_ssh_user}@{cfg.whm_ssh_host}",
     ]
 
 
-async def ssh_exec(remote_command: str) -> tuple[int, str, str]:
+async def ssh_exec(cfg: EffectiveIntegrationConfig, remote_command: str) -> tuple[int, str, str]:
     """Run a remote shell command on WHM via SSH. Returns (code, stdout, stderr)."""
-    s = get_settings()
-    if not s.whm_ssh_host or not Path(s.whm_ssh_key_path).exists():
+    if not ssh_configured(cfg):
         return 127, "", "SSH not configured or key missing"
     proc = await asyncio.create_subprocess_exec(
-        *_ssh_base(),
+        *_ssh_base(cfg),
         remote_command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -39,20 +36,21 @@ async def ssh_exec(remote_command: str) -> tuple[int, str, str]:
     return proc.returncode or 0, out_b.decode(errors="replace"), err_b.decode(errors="replace")
 
 
-async def scp_from_remote(remote_path: str, local_path: Path) -> tuple[int, str]:
-    s = get_settings()
+async def scp_from_remote(cfg: EffectiveIntegrationConfig, remote_path: str, local_path: Path) -> tuple[int, str]:
+    if not ssh_configured(cfg):
+        return 127, "SSH not configured or key missing"
     local_path.parent.mkdir(parents=True, exist_ok=True)
     proc = await asyncio.create_subprocess_exec(
         "scp",
         "-i",
-        s.whm_ssh_key_path,
+        cfg.whm_ssh_key_path,
         "-P",
-        str(s.whm_ssh_port),
+        str(cfg.whm_ssh_port),
         "-o",
         "BatchMode=yes",
         "-o",
         "StrictHostKeyChecking=accept-new",
-        f"{s.whm_ssh_user}@{s.whm_ssh_host}:{remote_path}",
+        f"{cfg.whm_ssh_user}@{cfg.whm_ssh_host}:{remote_path}",
         str(local_path),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
@@ -61,20 +59,21 @@ async def scp_from_remote(remote_path: str, local_path: Path) -> tuple[int, str]
     return proc.returncode or 0, err.decode(errors="replace")
 
 
-async def scp_to_remote(local_path: Path, remote_path: str) -> tuple[int, str]:
-    s = get_settings()
+async def scp_to_remote(cfg: EffectiveIntegrationConfig, local_path: Path, remote_path: str) -> tuple[int, str]:
+    if not ssh_configured(cfg):
+        return 127, "SSH not configured or key missing"
     proc = await asyncio.create_subprocess_exec(
         "scp",
         "-i",
-        s.whm_ssh_key_path,
+        cfg.whm_ssh_key_path,
         "-P",
-        str(s.whm_ssh_port),
+        str(cfg.whm_ssh_port),
         "-o",
         "BatchMode=yes",
         "-o",
         "StrictHostKeyChecking=accept-new",
         str(local_path),
-        f"{s.whm_ssh_user}@{s.whm_ssh_host}:{remote_path}",
+        f"{cfg.whm_ssh_user}@{cfg.whm_ssh_host}:{remote_path}",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -82,5 +81,5 @@ async def scp_to_remote(local_path: Path, remote_path: str) -> tuple[int, str]:
     return proc.returncode or 0, err.decode(errors="replace")
 
 
-async def ssh_rm(remote_path: str) -> tuple[int, str, str]:
-    return await ssh_exec(f"rm -f -- {quote(remote_path)}")
+async def ssh_rm(cfg: EffectiveIntegrationConfig, remote_path: str) -> tuple[int, str, str]:
+    return await ssh_exec(cfg, f"rm -f -- {quote(remote_path)}")

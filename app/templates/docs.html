@@ -3,6 +3,8 @@
 {% block content %}
 <h1>Instructivo de aprovisionamiento</h1>
 
+<p class="muted">Tras iniciar sesión como administrador, defina host SSH, rutas y Drive en <a href="/settings/integrations">Integraciones</a>. Los valores guardados sustituyen al <code>.env</code> cuando no están vacíos; el secreto de sesión de cookies se genera en la BD al primer arranque (véase <a href="/install">/install</a> en instalación inicial).</p>
+
 <div class="card">
   <h2 style="margin-top:0;">1. Firewall en el VPS WHM</h2>
   <p class="muted">Permita SSH solo desde la <strong>IP fija</strong> del VPS donde corre Dockge (puerto 22 o el que use).</p>

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Integraciones WHM / Drive{% endblock %}
+{% block content %}
+<h1>Conexión WHM y Google Drive</h1>
+<div class="card" style="max-width:720px;">
+  <h2 style="margin-top:0;font-size:1.05rem;">Pasos recomendados</h2>
+  <ol class="muted" style="margin:0 0 0 1.1rem;padding:0;">
+    <li>En el servidor WHM: permita SSH solo desde la IP de este VPS de backup.</li>
+    <li>En la carpeta del stack: <code>secrets/whm_rsa</code> (clave privada; la pública en <code>authorized_keys</code> del WHM).</li>
+    <li>Volumen <strong>rclone_config</strong>: mismo nombre de remote que escriba aquí (p. ej. <code>gdrive</code> tras <code>rclone config</code>).</li>
+    <li>Rellene los campos y pulse <strong>Guardar</strong>. Detalle y ejemplos: <a href="/docs">Instructivo completo</a>.</li>
+  </ol>
+</div>
+<p class="muted">Los valores guardados aquí <strong>sustituyen</strong> a los del <code>.env</code> cuando no están vacíos. La clave SSH debe existir en el contenedor (p. ej. montaje <code>/secrets/whm_rsa</code>). El token WHM API es opcional.</p>
+<p class="muted"><strong>Token WHM API:</strong> deje el campo vacío para no modificar el valor ya almacenado; escriba un valor nuevo solo si desea actualizarlo.</p>
+<div id="msg" class="muted"></div>
+<div class="card">
+  <div class="row" style="flex-direction:column;align-items:stretch;gap:0.75rem;">
+    <label>Host SSH WHM <input id="whm_ssh_host" style="width:100%;max-width:520px;"></label>
+    <label>Usuario SSH <input id="whm_ssh_user" style="width:100%;max-width:200px;"></label>
+    <label>Puerto SSH <input id="whm_ssh_port" type="number" style="width:120px;"></label>
+    <label>Ruta clave privada en el contenedor <input id="whm_ssh_key_path" style="width:100%;max-width:520px;"></label>
+    <label>Ruta staging backups en WHM <input id="whm_staging_path" style="width:100%;max-width:520px;"></label>
+    <label>Ruta incoming restore en WHM <input id="whm_restore_incoming" style="width:100%;max-width:520px;"></label>
+    <label>Nombre remote rclone <input id="rclone_remote" style="width:100%;max-width:200px;"></label>
+    <label>Prefijo en Drive (ej. WHM03_BACKUP) <input id="drive_remote_prefix" style="width:100%;max-width:520px;"></label>
+    <label>URL webhook alertas (opcional) <input id="alert_webhook_url" style="width:100%;max-width:520px;"></label>
+    <label>Segundos archivo estable (drenaje) <input id="file_stable_seconds" type="number" style="width:120px;"></label>
+    <label>Worker poll activo (s) <input id="worker_poll_active_seconds" type="number" style="width:120px;"></label>
+    <label>Worker poll reposo (s) <input id="worker_poll_idle_seconds" type="number" style="width:120px;"></label>
+    <label>WHM API host (opcional) <input id="whm_api_host" style="width:100%;max-width:520px;"></label>
+    <label>WHM API token (opcional; vacío = no cambiar) <input id="whm_api_token" type="password" autocomplete="off" style="width:100%;max-width:520px;"></label>
+  </div>
+  <p style="margin-top:1rem;"><button type="button" id="saveBtn">Guardar</button></p>
+</div>
+<script>
+const csrf = "{{ csrf_token }}";
+async function load() {
+  const r = await fetch('/api/integration', { credentials: 'same-origin' });
+  if (!r.ok) { msg.textContent = await r.text(); return; }
+  const j = await r.json();
+  const e = j.effective;
+  whm_ssh_host.value = e.whm_ssh_host || '';
+  whm_ssh_user.value = e.whm_ssh_user || '';
+  whm_ssh_port.value = e.whm_ssh_port || 22;
+  whm_ssh_key_path.value = e.whm_ssh_key_path || '';
+  whm_staging_path.value = e.whm_staging_path || '';
+  whm_restore_incoming.value = e.whm_restore_incoming || '';
+  rclone_remote.value = e.rclone_remote || '';
+  drive_remote_prefix.value = e.drive_remote_prefix || '';
+  alert_webhook_url.value = e.alert_webhook_url || '';
+  file_stable_seconds.value = e.file_stable_seconds || 180;
+  worker_poll_active_seconds.value = e.worker_poll_active_seconds || 120;
+  worker_poll_idle_seconds.value = e.worker_poll_idle_seconds || 900;
+  whm_api_host.value = e.whm_api_host || '';
+  whm_api_token.value = '';
+  whm_api_token.placeholder = e.whm_api_token_masked ? 'Configurado ('+e.whm_api_token_masked+')' : 'No configurado';
+}
+function numOrUndef(el) {
+  const v = parseInt(el.value, 10);
+  return Number.isFinite(v) ? v : undefined;
+}
+document.getElementById('saveBtn').onclick = async () => {
+  const body = {
+    csrf_token: csrf,
+    whm_ssh_host: whm_ssh_host.value.trim() || null,
+    whm_ssh_user: whm_ssh_user.value.trim() || null,
+    whm_ssh_port: numOrUndef(whm_ssh_port),
+    whm_ssh_key_path: whm_ssh_key_path.value.trim() || null,
+    whm_staging_path: whm_staging_path.value.trim() || null,
+    whm_restore_incoming: whm_restore_incoming.value.trim() || null,
+    rclone_remote: rclone_remote.value.trim() || null,
+    drive_remote_prefix: drive_remote_prefix.value.trim() || null,
+    alert_webhook_url: alert_webhook_url.value.trim() || null,
+    file_stable_seconds: numOrUndef(file_stable_seconds),
+    worker_poll_active_seconds: numOrUndef(worker_poll_active_seconds),
+    worker_poll_idle_seconds: numOrUndef(worker_poll_idle_seconds),
+    whm_api_host: whm_api_host.value.trim() || null,
+  };
+  if (whm_api_token.value.trim() !== '') body.whm_api_token = whm_api_token.value.trim();
+  const r = await fetch('/api/integration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), credentials: 'same-origin' });
+  msg.textContent = await r.text();
+  if (r.ok) load();
+};
+load();
+</script>
+{% endblock %}
