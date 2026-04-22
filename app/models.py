@@ -9,6 +9,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db import Base
 
 
+class AppSecrets(Base):
+    """Fila única id=1: claves generadas en la BD (sin depender de .env en Dockge)."""
+
+    __tablename__ = "app_secrets"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    session_secret: Mapped[str] = mapped_column(Text)
+    webhook_hmac_secret: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -20,6 +30,35 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
+
+
+class IntegrationSettings(Base):
+    """Fila única id=1: integración WHM/Drive editable desde el panel (toma precedencia sobre .env si el campo no está vacío)."""
+
+    __tablename__ = "integration_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)
+    )
+
+    whm_ssh_host: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    whm_ssh_user: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    whm_ssh_port: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    whm_ssh_key_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    whm_staging_path: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    whm_restore_incoming: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+    rclone_remote: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    drive_remote_prefix: Mapped[str | None] = mapped_column(String(512), nullable=True)
+
+    alert_webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    file_stable_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    worker_poll_active_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    worker_poll_idle_seconds: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    whm_api_host: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    whm_api_token: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class AuditLog(Base):

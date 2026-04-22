@@ -5,6 +5,7 @@ secrets/*.pem
 __pycache__/
 *.pyc
 .pytest_cache/
+.pytest_backup_whm.db
 .venv/
 *.egg-info/
 dist/

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Instalación completada{% endblock %}
+{% block content %}
+<h1>Listo</h1>
+<p>El administrador ya existe. El siguiente paso es entrar al panel y configurar las integraciones.</p>
+<div class="card" style="max-width:520px;">
+  <ol class="muted" style="margin:0 0 1rem 1rem;">
+    <li><a href="/login">Iniciar sesión</a> con el email y contraseña que acaba de crear.</li>
+    <li>Como administrador, abra <a href="/settings/integrations"><strong>Integraciones</strong></a> y defina host SSH WHM, rutas, remote de rclone y prefijo en Drive.</li>
+    <li>Revise la guía en <a href="/docs">Conexión WHM/Drive</a> (tras entrar).</li>
+  </ol>
+  <p><a href="/login" style="display:inline-block;padding:.45rem .85rem;border-radius:6px;background:var(--accent);color:#fff;font-weight:600;">Ir al login</a></p>
+</div>
+{% endblock %}

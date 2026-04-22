@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Instalación{% endblock %}
+{% block content %}
+<h1>Instalación guiada</h1>
+<p class="muted">Siga los pasos en orden. Las claves de sesión ya están creadas en la base de datos; no necesita copiar <code>SESSION_SECRET</code> en Dockge salvo que quiera anularlas manualmente.</p>
+
+{% if error %}
+<p style="color:var(--danger);">{{ error }}</p>
+{% endif %}
+
+<section class="card" style="max-width:640px;">
+  <h2 style="font-size:1.1rem;margin-top:0;">Paso 1 — Stack Docker (Dockge)</h2>
+  <ul class="muted" style="margin:0 0 1rem 1rem;padding:0;">
+    <li>Defina <strong>POSTGRES_PASSWORD</strong> en el entorno del stack (Dockge → Variables) y use la misma en <code>.env</code> si aplica.</li>
+    <li>Monte <code>./secrets</code> con la clave SSH hacia WHM (<code>whm_rsa</code>) y el volumen de <strong>rclone</strong> (solo lectura en la API).</li>
+    <li>Tras el primer arranque, guarde una copia de los secretos que aparecen abajo (sobre todo si usará el webhook firmado).</li>
+  </ul>
+</section>
+
+{% if secrets_row %}
+<section class="card" style="max-width:640px;">
+  <h2 style="font-size:1.1rem;margin-top:0;">Paso 2 — Claves generadas</h2>
+  <p class="muted"><strong>Secreto de sesión (cookies)</strong> — queda en la BD; guárdelo solo si necesita recuperación o auditoría.</p>
+  <pre style="overflow:auto;font-size:.75rem;max-height:6rem;user-select:all;">{{ secrets_row.session_secret }}</pre>
+  <p class="muted" style="font-size:.85rem;">Seleccione el texto del recuadro y cópielo (Ctrl+C) si necesita archivo de respaldo.</p>
+
+  <p class="muted" style="margin-top:1rem;"><strong>Webhook PkgAcct (opcional)</strong> — si no usa firma HMAC, puede dejarlo vacío. Si genera uno, WHM debe enviar el mismo valor firmando el cuerpo.</p>
+  {% if secrets_row.webhook_hmac_secret %}
+  <pre style="overflow:auto;font-size:.75rem;user-select:all;">{{ secrets_row.webhook_hmac_secret }}</pre>
+  <p class="muted" style="font-size:.85rem;">Seleccione y copie para pegarlo en el hook de WHM.</p>
+  {% else %}
+  <form method="post" action="/install/generate-webhook-secret" style="margin:0;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit" class="secondary">Generar secreto HMAC para el webhook</button>
+  </form>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="card" style="max-width:480px;">
+  <h2 style="font-size:1.1rem;margin-top:0;">Paso 3 — Primer administrador</h2>
+  <p class="muted">Después podrá conectar <strong>WHM</strong> y <strong>Google Drive</strong> en <code>Integraciones</code> una vez dentro del panel.</p>
+  <form method="post" action="/setup">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p><label>Email del administrador<br><input type="email" name="email" required autocomplete="email" style="width:100%;"></label></p>
+    <p><label>Contraseña (mín. 10 caracteres)<br><input type="password" name="password" required minlength="10" autocomplete="new-password" style="width:100%;"></label></p>
+    <p><label>Repita contraseña<br><input type="password" name="password2" required minlength="10" autocomplete="new-password" style="width:100%;"></label></p>
+    <button type="submit">Crear administrador</button>
+  </form>
+</section>
+{% endblock %}

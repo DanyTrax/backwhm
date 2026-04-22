@@ -6,11 +6,9 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str = "postgresql+asyncpg://backupwhm:changeme_pg@localhost:5432/backupwhm"
+    # Respaldo si falla el arranque contra Postgres; en producción la sesión usa app_secrets en BD.
     session_secret: str = "change-me-session-secret-min-32-chars!!"
     csrf_secret: str = "change-me-csrf-secret-min-32-chars!!"
-
-    initial_admin_email: str = "admin@local"
-    initial_admin_password: str = "admin123change"
 
     whm_ssh_host: str = ""
     whm_ssh_user: str = "root"
