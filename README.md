@@ -11,7 +11,8 @@ Orquestación **WHM → VPS (Docker/Dockge) → Google Drive** con panel web (lo
 
 ```bash
 cp .env.example .env
-# Editar POSTGRES_PASSWORD, SESSION_SECRET, CSRF_SECRET, WHM_*, RCLONE_REMOTE, DRIVE_REMOTE_PREFIX, WEBHOOK_HMAC_SECRET (opcional)
+# Editar al menos POSTGRES_PASSWORD, SESSION_SECRET, CSRF_SECRET.
+# WHM/Drive pueden dejarse aquí como valores por defecto o configurarse después en el panel (admin → Integraciones).
 
 mkdir -p secrets
 # Copiar clave privada SSH a secrets/whm_rsa (chmod 600)
@@ -20,7 +21,8 @@ docker compose up -d --build
 ```
 
 - API/UI: `http://IP:8000` (ponga TLS con Caddy/Traefik delante en producción).
-- Usuario inicial: variables `INITIAL_ADMIN_EMAIL` / `INITIAL_ADMIN_PASSWORD` (cámbielas de inmediato).
+- **Primer acceso:** abra `http://IP:8000/setup` y cree el **único** usuario inicial (administrador). El resto de usuarios del panel se crean en **Usuarios**.
+- **Integraciones:** como admin, en `http://IP:8000/settings/integrations` defina host SSH WHM, rutas, remote `rclone` y prefijo de Drive (sustituyen al `.env` si no están vacíos).
 
 ## Documentación
 
@@ -39,4 +41,10 @@ pytest -q
 
 ## Dockge
 
-Cree un stack nuevo y pegue el contenido de `docker-compose.yml`, o use “Compose path” al directorio de este proyecto.
+Si en Dockge **solo pega** el `docker-compose.yml`, la carpeta del stack **no incluye** el `Dockerfile` y el build falla. Por defecto el compose usa **`BUILD_CONTEXT`** apuntando a **GitHub** (`https://github.com/DanyTrax/backwhm.git#main`) para construir `api` y `worker` sin clonar.
+
+Alternativas:
+
+1. **Recomendado (Dockge “solo YAML”)**: deje `BUILD_CONTEXT` sin definir; el servidor necesita salida a internet para clonar el repo al construir.
+2. **Stack con repo completo**: clone el proyecto en la carpeta del stack y en `.env` ponga `BUILD_CONTEXT=.` (directorio actual con `Dockerfile`).
+3. **Fork privado**: cambie la URL en `docker-compose.yml` o defina `BUILD_CONTEXT=https://github.com/SU_ORG/SU_REPO.git#main` (y token si hace falta para clone privado).

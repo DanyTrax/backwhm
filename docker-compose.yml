@@ -14,8 +14,12 @@ services:
       timeout: 5s
       retries: 10
 
+  # build: por defecto desde GitHub (Dockge suele tener solo este YAML en la carpeta del stack).
+  # Desarrollo local con repo clonado: en .env ponga BUILD_CONTEXT=. (punto)
   api:
-    build: .
+    build:
+      context: ${BUILD_CONTEXT:-https://github.com/DanyTrax/backwhm.git#main}
+      dockerfile: Dockerfile
     restart: unless-stopped
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     env_file: .env
@@ -33,7 +37,9 @@ services:
         condition: service_healthy
 
   worker:
-    build: .
+    build:
+      context: ${BUILD_CONTEXT:-https://github.com/DanyTrax/backwhm.git#main}
+      dockerfile: Dockerfile
     restart: unless-stopped
     command: python -m app.worker_main
     env_file: .env
