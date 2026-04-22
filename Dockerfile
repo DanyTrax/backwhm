@@ -1,7 +1,7 @@
 FROM python:3.12-slim-bookworm
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    openssh-client rsync curl ca-certificates \
+    openssh-client rsync curl ca-certificates unzip \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://downloads.rclone.org/rclone-current-linux-amd64.zip -o /tmp/r.zip \
