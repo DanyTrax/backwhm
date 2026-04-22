@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Tareas programadas{% endblock %}
+{% block content %}
+<h1>Tareas (cron)</h1>
+<p class="muted">El worker usa el filtro <code>account_filter</code> de la primera tarea habilitada que lo defina; si ninguna, procesa todos los artefactos detectados.</p>
+<div id="list" class="card muted">Cargando…</div>
+{% if is_admin %}
+<div class="card">
+  <h2 style="margin-top:0;">Nueva tarea</h2>
+  <div class="row">
+    <div><label>Nombre<input id="t_name" style="width:220px;"></label></div>
+    <div><label>Cron<input id="t_cron" placeholder="0 2 * * *" style="width:140px;"></label></div>
+    <div><label>Filtro cuentas (coma, vacío=todas)<input id="t_filt" placeholder="abensa,epicosie" style="width:280px;"></label></div>
+    <div><button type="button" id="t_btn">Crear</button></div>
+  </div>
+  <pre id="t_out" class="muted"></pre>
+</div>
+{% endif %}
+<script>
+async function load() {
+  const r = await fetch('/api/tasks', { credentials:'same-origin' });
+  const data = await r.json();
+  document.getElementById('list').innerHTML = '<table><thead><tr><th>ID</th><th>Nombre</th><th>Cron</th><th>Filtro</th><th>Activa</th></tr></thead><tbody>' +
+    data.map(t => `<tr><td>${t.id}</td><td>${t.name}</td><td><code>${t.cron}</code></td><td>${(t.account_filter||[]).join(',')}</td><td>${t.enabled?'sí':'no'}</td></tr>`).join('') + '</tbody></table>';
+}
+load();
+{% if is_admin %}
+const csrf = "{{ csrf_token }}";
+document.getElementById('t_btn').onclick = async () => {
+  const filt = t_filt.value.trim();
+  const body = {
+    name: t_name.value,
+    cron: t_cron.value || '0 2 * * *',
+    task_type: 'drain_scan',
+    account_filter: filt ? filt.split(',').map(s=>s.trim()).filter(Boolean) : null,
+    max_concurrent: 1,
+    enabled: true,
+    csrf_token: csrf
+  };
+  const r = await fetch('/api/tasks', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'same-origin' });
+  t_out.textContent = await r.text();
+  if(r.ok) load();
+};
+{% endif %}
+</script>
+{% endblock %}

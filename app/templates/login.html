@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Entrar — WHM Backup{% endblock %}
+{% block content %}
+<h1>Iniciar sesión</h1>
+<div class="card" style="max-width:420px;">
+  <form method="post" action="/login">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p><label>Email<br><input type="email" name="email" required autocomplete="username" style="width:100%;"></label></p>
+    <p><label>Contraseña<br><input type="password" name="password" required autocomplete="current-password" style="width:100%;"></label></p>
+    <button type="submit">Entrar</button>
+  </form>
+  <p class="muted">Cambie la contraseña del admin inicial tras el primer despliegue.</p>
+</div>
+{% endblock %}

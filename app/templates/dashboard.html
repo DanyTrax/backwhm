@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Panel — WHM Backup{% endblock %}
+{% block content %}
+<h1>Resumen</h1>
+<p class="muted">El worker drena archivos estables desde el WHM hacia Google Drive. Revise la auditoría para el detalle.</p>
+<div class="card">
+  <h2 style="margin-top:0;">Últimos eventos</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Fecha</th><th>Acción</th><th>Estado</th><th>Origen</th></tr></thead>
+    <tbody>
+      {% for r in recent %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td>{{ r.created_at }}</td>
+        <td>{{ r.action }}</td>
+        <td>{{ r.status }}</td>
+        <td><small>{{ (r.source_path or '')[:80] }}</small></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">Sin eventos aún.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p><a href="/audit">Ver auditoría completa →</a></p>
+</div>
+{% endblock %}

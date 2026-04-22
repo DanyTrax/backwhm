@@ -1,0 +1,10 @@
+.env
+secrets/whm_rsa
+secrets/id_rsa
+secrets/*.pem
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+*.egg-info/
+dist/

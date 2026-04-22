@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Auditoría{% endblock %}
+{% block content %}
+<h1>Registros de auditoría</h1>
+<p class="row">
+  <a href="/api/audit/export?format=csv"><button type="button" class="secondary">Exportar CSV</button></a>
+  <a href="/api/audit/export?format=json"><button type="button" class="secondary">Exportar JSON</button></a>
+  {% if page > 1 %}<a href="/audit?page={{ page - 1 }}"><button type="button" class="secondary">Anterior</button></a>{% endif %}
+  <a href="/audit?page={{ page + 1 }}"><button type="button" class="secondary">Siguiente</button></a>
+</p>
+{% if is_admin %}
+<div class="card">
+  <h2 style="margin-top:0;">Borrado (solo admin)</h2>
+  <p class="muted">Purgado total o por correlación / ID máximo.</p>
+  <form id="delForm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" id="csrfDel">
+    <p><label>Correlation ID (opcional)<br><input type="text" id="corr" style="width:100%;max-width:480px;"></label></p>
+    <p><label>Borrar hasta ID inclusive (opcional)<br><input type="number" id="beforeId" style="width:200px;"></label></p>
+    <p><label><input type="checkbox" id="purgeAll"> Purgar toda la auditoría</label></p>
+    <button type="button" class="danger" id="btnDel">Ejecutar borrado</button>
+  </form>
+  <pre id="delOut" class="muted" style="white-space:pre-wrap;"></pre>
+</div>
+<script>
+document.getElementById('btnDel').onclick = async () => {
+  const body = {
+    csrf_token: document.getElementById('csrfDel').value,
+    purge_all: document.getElementById('purgeAll').checked,
+    correlation_id: document.getElementById('corr').value || null,
+    before_id: document.getElementById('beforeId').value ? parseInt(document.getElementById('beforeId').value,10) : null
+  };
+  const r = await fetch('/api/audit/delete', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'same-origin' });
+  const t = await r.text();
+  document.getElementById('delOut').textContent = t;
+  if(r.ok) location.reload();
+};
+</script>
+{% endif %}
+<div class="card">
+  <table>
+    <thead><tr><th>ID</th><th>Fecha</th><th>Acción</th><th>Estado</th><th>Corr.</th><th>Origen</th><th>Destino</th><th>Mensaje</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td><small>{{ r.created_at }}</small></td>
+        <td>{{ r.action }}</td>
+        <td>{{ r.status }}</td>
+        <td><small>{{ r.correlation_id or '' }}</small></td>
+        <td><small>{{ r.source_path or '' }}</small></td>
+        <td><small>{{ r.dest_path or '' }}</small></td>
+        <td><small>{{ (r.message or '')[:120] }}</small></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="muted">Sin registros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

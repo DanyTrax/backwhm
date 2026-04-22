@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Conexión WHM y Drive{% endblock %}
+{% block content %}
+<h1>Instructivo de aprovisionamiento</h1>
+
+<div class="card">
+  <h2 style="margin-top:0;">1. Firewall en el VPS WHM</h2>
+  <p class="muted">Permita SSH solo desde la <strong>IP fija</strong> del VPS donde corre Dockge (puerto 22 o el que use).</p>
+  <pre><code># Ejemplo CSF: csf -a IP_DEL_VPS_BACKUP</code></pre>
+</div>
+
+<div class="card">
+  <h2>2. Clave SSH dedicada</h2>
+  <p>En el servidor de backup genere una clave y copie la pública a <code>/root/.ssh/authorized_keys</code> del WHM.</p>
+  <pre><code>ssh-keygen -t ed25519 -f ./secrets/whm_rsa -N ""
+# Montar ./secrets en el stack (solo lectura)</code></pre>
+</div>
+
+<div class="card">
+  <h2>3. Token WHM (API)</h2>
+  <p>Cree un token con permisos mínimos para operaciones que vaya a automatizar; para restauración automatizada use un token separado con permisos elevados y rote periódicamente.</p>
+</div>
+
+<div class="card">
+  <h2>4. Google Drive + rclone</h2>
+  <ol class="muted">
+    <li>Instale <code>rclone</code> o use la imagen Docker provista.</li>
+    <li><code>rclone config</code> → remote nombre igual a <code>RCLONE_REMOTE</code> (p. ej. <code>gdrive</code>).</li>
+    <li>Monte el directorio de configuración en el volumen <code>rclone_config</code> del compose.</li>
+    <li>La jerarquía en Drive seguirá <code>DRIVE_REMOTE_PREFIX</code> (p. ej. <code>WHM03_BACKUP/…</code>).</li>
+  </ol>
+</div>
+
+<div class="card">
+  <h2>5. Hook PkgAcct (opcional, aviso por cuenta)</h2>
+  <p class="muted">Después de cada cuenta, notifique al worker. Firma HMAC SHA-256 del cuerpo en cabecera <code>X-Signature: sha256=&lt;hex&gt;</code>. Configure <code>WEBHOOK_HMAC_SECRET</code> igual en WHM y en la app.</p>
+  <pre><code>#!/bin/bash
+# /root/hooks/pkgacct_notify.sh — llamar desde hook cPanel postFinalize
+BODY='{"user":"'"$user"'","tarball":"'"$tarball"'"}'
+SIG=$(echo -n "$BODY" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print $2}')
+curl -sS -X POST "https://SU_VPS_BACKUP/webhooks/pkgacct" \
+  -H "Content-Type: application/json" \
+  -H "X-Signature: sha256=$SIG" \
+  -d "$BODY"</code></pre>
+  <p class="muted">Ajuste variables <code>user</code>/<code>tarball</code> según el entorno real del hook de cPanel (consulte la documentación oficial de hooks PkgAcct).</p>
+</div>
+
+<div class="card">
+  <h2>6. Webhook público</h2>
+  <p>Exponga <code>https://…/webhooks/pkgacct</code> detrás de TLS (Caddy/Traefik). Sin TLS en producción no es recomendable.</p>
+</div>
+{% endblock %}

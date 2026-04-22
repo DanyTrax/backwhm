@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Usuarios{% endblock %}
+{% block content %}
+<h1>Usuarios del panel</h1>
+<div class="card">
+  <h2 style="margin-top:0;">Crear usuario</h2>
+  <div class="row">
+    <div><label>Email<input type="email" id="nu_email" style="width:260px;"></label></div>
+    <div><label>Contraseña<input type="password" id="nu_pass" style="width:200px;"></label></div>
+    <div><label>Rol<select id="nu_role"><option value="operator">operador</option><option value="admin">admin</option></select></label></div>
+    <div><button type="button" id="nu_btn">Crear</button></div>
+  </div>
+  <pre id="nu_out" class="muted"></pre>
+</div>
+<div class="card">
+  <table>
+    <thead><tr><th>ID</th><th>Email</th><th>Rol</th><th>Activo</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr>
+        <td>{{ u.id }}</td>
+        <td>{{ u.email }}</td>
+        <td>{{ u.role }}</td>
+        <td>{{ 'sí' if u.active else 'no' }}</td>
+        <td>
+          {% if u.id != user.id %}
+          <button type="button" class="secondary" data-id="{{ u.id }}" data-active="{{ 'false' if u.active else 'true' }}" onclick="toggleUser(this)">
+            {% if u.active %}Desactivar{% else %}Activar{% endif %}
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+const csrf = "{{ csrf_token }}";
+document.getElementById('nu_btn').onclick = async () => {
+  const body = { email: nu_email.value, password: nu_pass.value, role: nu_role.value, csrf_token: csrf };
+  const r = await fetch('/api/users', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'same-origin' });
+  nu_out.textContent = await r.text();
+  if(r.ok) location.reload();
+};
+async function toggleUser(btn) {
+  const id = btn.dataset.id;
+  const active = btn.dataset.active === 'true';
+  const r = await fetch('/api/users/'+id, { method:'PATCH', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ active, csrf_token: csrf }), credentials:'same-origin' });
+  if(r.ok) location.reload();
+  else alert(await r.text());
+}
+</script>
+{% endblock %}

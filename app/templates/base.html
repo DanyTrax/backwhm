@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}WHM Backup Panel{% endblock %}</title>
+  <style>
+    :root { --bg:#0f1419; --card:#1a2332; --text:#e7ecf3; --muted:#8b9bb4; --accent:#3d8bfd; --danger:#e55353; }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin:0; line-height:1.5; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header { background: var(--card); padding: .75rem 1.25rem; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #2a3545; }
+    nav a { margin-right: 1rem; }
+    main { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+    .card { background: var(--card); border-radius: 8px; padding: 1.25rem; margin-bottom: 1rem; border: 1px solid #2a3545; }
+    table { width:100%; border-collapse: collapse; font-size: .9rem; }
+    th, td { text-align:left; padding: .5rem .6rem; border-bottom: 1px solid #2a3545; vertical-align: top; }
+    th { color: var(--muted); font-weight:600; }
+    code { background:#0b0f14; padding:.1rem .35rem; border-radius:4px; font-size:.85em; }
+    input, select, button { padding: .45rem .65rem; border-radius:6px; border:1px solid #2a3545; background:#0b0f14; color:var(--text); }
+    button { background: var(--accent); border-color: var(--accent); cursor:pointer; font-weight:600; }
+    button.secondary { background: transparent; border-color: var(--muted); }
+    button.danger { background: var(--danger); border-color: var(--danger); }
+    .muted { color: var(--muted); font-size: .9rem; }
+    .row { display:flex; gap:1rem; flex-wrap:wrap; align-items:flex-end; }
+    .row > div { display:flex; flex-direction:column; gap:.25rem; }
+    h1 { font-size: 1.35rem; margin: 0 0 1rem; }
+  </style>
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header>
+    <nav>
+      {% if user %}
+      <a href="/">Inicio</a>
+      <a href="/audit">Auditoría</a>
+      <a href="/tasks">Tareas</a>
+      <a href="/docs">Conexión WHM/Drive</a>
+      {% if user.role == 'admin' %}
+      <a href="/users">Usuarios</a>
+      <a href="/restore">Restaurar</a>
+      {% endif %}
+      {% endif %}
+    </nav>
+    {% if user %}
+    <form method="post" action="/logout" style="margin:0;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button type="submit" class="secondary">Salir ({{ user.email }})</button>
+    </form>
+    {% endif %}
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

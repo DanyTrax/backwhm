@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Restaurar cuenta{% endblock %}
+{% block content %}
+<h1>Restaurar desde Drive</h1>
+<p class="muted">Ruta relativa bajo el prefijo configurado (ej. <code>2026-04-20/accounts/abensa.tar</code>). Modo <strong>assisted</strong>: copia al WHM y deja instrucciones. Modo <strong>api</strong>: ejecuta <code>restorepkg</code> por SSH (riesgoso; pruebe en staging).</p>
+<div class="card">
+  <div class="row">
+    <div><label>Ruta en Drive<input id="rp" style="width:420px;" placeholder="2026-04-20/accounts/abensa.tar"></label></div>
+    <div><label>Usuario cPanel<input id="tu" style="width:160px;"></label></div>
+    <div><label>Modo<select id="md"><option value="assisted">assisted</option><option value="api">api (restorepkg)</option></select></label></div>
+    <div><button type="button" id="go">Encolar</button></div>
+  </div>
+  <pre id="out" class="muted"></pre>
+</div>
+<div class="card">
+  <h2 style="margin-top:0;">Checklist post-restore</h2>
+  <ul class="muted">
+    <li>DNS apuntando al servidor correcto.</li>
+    <li>Certificados SSL (reemisión / AutoSSL).</li>
+    <li>IP dedicada vs compartida.</li>
+    <li>Compatibilidad de versión cPanel origen ↔ destino.</li>
+  </ul>
+</div>
+<script>
+const csrf = "{{ csrf_token }}";
+document.getElementById('go').onclick = async () => {
+  const body = { drive_path: rp.value.trim(), target_username: tu.value.trim(), mode: md.value, csrf_token: csrf };
+  const r = await fetch('/api/restore-jobs', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body), credentials:'same-origin' });
+  out.textContent = await r.text();
+};
+</script>
+{% endblock %}

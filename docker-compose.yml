@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: backupwhm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_pg}
+      POSTGRES_DB: backupwhm
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backupwhm -d backupwhm"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://backupwhm:${POSTGRES_PASSWORD:-changeme_pg}@postgres:5432/backupwhm
+      APP_ROLE: api
+    ports:
+      - "${API_PORT:-8000}:8000"
+    volumes:
+      - staging:/data/staging
+      - rclone_config:/root/.config/rclone:ro
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build: .
+    restart: unless-stopped
+    command: python -m app.worker_main
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://backupwhm:${POSTGRES_PASSWORD:-changeme_pg}@postgres:5432/backupwhm
+      APP_ROLE: worker
+    volumes:
+      - staging:/data/staging
+      - rclone_config:/root/.config/rclone:ro
+      - ./secrets:/secrets:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  staging:
+  rclone_config:
